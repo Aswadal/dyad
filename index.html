@@ -1,12 +1,175 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Dyad</title>
-    <link href="/src/styles/globals.css" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/renderer.tsx"></script>
-  </body>
+<head>
+    <title>Dyad Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial; }
+        #container { display: flex; height: 100vh; }
+        #left { flex: 1; background: #1e1e1e; padding: 20px; }
+        #right { flex: 1; background: #000; padding: 10px; }
+        #dyad-code { 
+            width: 100%; 
+            height: 200px; 
+            background: #2d2d2d; 
+            color: #fff; 
+            border: none;
+            padding: 10px;
+            font-family: monospace;
+        }
+        button { 
+            background: #007acc; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px 0; 
+            cursor: pointer;
+        }
+        #dyad-output { 
+            background: #252526; 
+            color: #fff; 
+            padding: 10px; 
+            margin-top: 10px;
+            min-height: 100px;
+            font-family: monospace;
+        }
+        h3 { color: white; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="left">
+            <h3>Dyad Lisp Editor</h3>
+            <textarea id="dyad-code">
+;; Welcome to Dyad Terminal!
+(print "Hello from Dyad!")
+;; Try: (shell "ls -la")
+;; Try: (terminal-write "Hello Terminal!")
+            </textarea>
+            <button onclick="runDyadCode()">▶ Run Code</button>
+            <div id="dyad-output"></div>
+        </div>
+        
+        <div id="right">
+            <h3>Integrated Terminal</h3>
+            <div id="terminal"></div>
+        </div>
+    </div>
+
+    <script>
+        // Dyad Terminal Integration
+        class DyadTerminal {
+            constructor() {
+                this.terminal = new Terminal({
+                    cursorBlink: true,
+                    theme: {
+                        background: '#000000',
+                        foreground: '#ffffff'
+                    },
+                    fontSize: 14
+                });
+                
+                this.terminal.open(document.getElementById('terminal'));
+                this.terminal.writeln('Dyad Terminal v1.0');
+                this.terminal.writeln('Type commands or use Dyad shell functions');
+                this.terminal.write('$ ');
+                
+                this.currentLine = '';
+                this.setupTerminal();
+            }
+            
+            setupTerminal() {
+                this.terminal.onData(data => {
+                    if (data === '\r') {
+                        this.executeCommand(this.currentLine);
+                        this.currentLine = '';
+                        this.terminal.write('\r\n$ ');
+                    } else if (data === '\x7f') {
+                        if (this.currentLine.length > 0) {
+                            this.currentLine = this.currentLine.slice(0, -1);
+                            this.terminal.write('\b \b');
+                        }
+                    } else {
+                        this.currentLine += data;
+                        this.terminal.write(data);
+                    }
+                });
+            }
+            
+            executeCommand(cmd) {
+                if (cmd === 'clear') {
+                    this.terminal.clear();
+                    this.terminal.write('$ ');
+                    return;
+                }
+                
+                // Simulate command execution
+                this.terminal.write('\r\n');
+                this.terminal.writeln(`Executing: ${cmd}`);
+                
+                // Simulate output for demo
+                const responses = {
+                    'ls': 'README.md  index.html  dyad.js  dyad.wasm',
+                    'pwd': '/home/dyad-user',
+                    'whoami': 'dyad-user',
+                    'help': 'Available commands: ls, pwd, whoami, clear, help'
+                };
+                
+                if (responses[cmd]) {
+                    this.terminal.writeln(responses[cmd]);
+                } else {
+                    this.terminal.writeln(`Command '${cmd}' executed (demo mode)`);
+                }
+            }
+            
+            write(text) {
+                this.terminal.write(text);
+            }
+            
+            writeln(text) {
+                this.terminal.writeln(text);
+            }
+        }
+        
+        // Initialize terminal
+        const term = new DyadTerminal();
+        
+        // Dyad simulation for demo
+        function runDyadCode() {
+            const code = document.getElementById('dyad-code').value;
+            const output = document.getElementById('dyad-output');
+            
+            output.innerHTML = '<strong>Output:</strong><br>';
+            
+            // Parse and execute demo Dyad commands
+            if (code.includes('(print')) {
+                const match = code.match(/\(print "([^"]+)"\)/);
+                if (match) {
+                    output.innerHTML += match[1] + '<br>';
+                }
+            }
+            
+            if (code.includes('(shell')) {
+                const match = code.match(/\(shell "([^"]+)"\)/);
+                if (match) {
+                    term.writeln(`[Dyad] Executing shell: ${match[1]}`);
+                    term.executeCommand(match[1]);
+                }
+            }
+            
+            if (code.includes('(terminal-write')) {
+                const match = code.match(/\(terminal-write "([^"]+)"\)/);
+                if (match) {
+                    term.write(match[1]);
+                }
+            }
+            
+            output.innerHTML += '<br><em>Ready for real Dyad integration</em>';
+        }
+        
+        // Make terminal globally accessible
+        window.dyadTerminal = term;
+    </script>
+</body>
 </html>

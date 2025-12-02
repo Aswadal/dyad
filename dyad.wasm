@@ -1,0 +1,2 @@
+touch dyad.wasm
+echo "WASM binary placeholder" > dyad.wasm
